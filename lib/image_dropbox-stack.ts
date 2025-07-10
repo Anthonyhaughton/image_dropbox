@@ -44,9 +44,14 @@ export class ImageDropboxStack extends cdk.Stack {
     /* This single block of code:
       - creates the API Gateway
       - sets up proxy intergration to fwd requests to lambda
-      - automagically creates permissions for the API Gateway to invoke lmda */
+      - automagically creates permissions for the API Gateway to invoke lmda (!!sick) */
     handler: imageHandler,
-    restApiName: 'ImageAPI'
+    restApiName: 'ImageAPI',
+    defaultCorsPreflightOptions: {
+      allowOrigins: apigw.Cors.ALL_ORIGINS, // Allow requests from any origin
+      allowMethods: apigw.Cors.ALL_METHODS, // Allow all HTTP methods
+      allowHeaders: ['Content-Type'],       // Allow the Content-Type header
+    }
   });
   }
 }
