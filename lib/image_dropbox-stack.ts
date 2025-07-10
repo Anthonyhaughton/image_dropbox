@@ -10,6 +10,7 @@ export class ImageDropboxStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: ImageDropboxStackProps) {
     super(scope, id, props);
 
+  // Create bucket that will store the images
   const imageBucket = new s3.Bucket(this, 'image_bucket', {
     bucketName: props.image_bucket,
     removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -22,22 +23,30 @@ export class ImageDropboxStack extends cdk.Stack {
       ignorePublicAcls: false,
       restrictPublicBuckets: false,
     }
-  })
+  });
 
+  // Define the lambda func
   const imageHandler = new lambda.Function(this, 'imageHandler', {
     runtime: lambda.Runtime.PYTHON_3_12,
     handler: 'handler.lambda_handler',
     code: lambda.Code.fromAsset(path.join(__dirname, '../lambda')),
+    // Define bucket name as env var to avoid hardcoding in .py
+    environment: {
+      BUCKET_NAME: imageBucket.bucketName,
+    }
   });
-
-  const imageEndpoint = new apigw.LambdaRestApi(this, 'imageEndpoint', {
-    handler: imageHandler,
-    restApiName:
-  });
-
+  
+  // Give lambda R+W permision on the bucket.
   imageBucket.grantRead(imageHandler);
   imageBucket.grantWrite(imageHandler);
 
-
+  const imageEndpoint = new apigw.LambdaRestApi(this, 'imageEndpoint', {
+    /* This single block of code:
+      - creates the API Gateway
+      - sets up proxy intergration to fwd requests to lambda
+      - automagically creates permissions for the API Gateway to invoke lmda */
+    handler: imageHandler,
+    restApiName: 'ImageAPI'
+  });
   }
 }
